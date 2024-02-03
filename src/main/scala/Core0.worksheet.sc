@@ -1,6 +1,6 @@
 class Prop(val run: (() => Unit) => Unit):
-  def &(e: => Prop) = Prop(k => run(() => e.run(k)))
-  def |(e: => Prop) = Prop(k => { run(k); e.run(k) })
+  def &(p: => Prop) = Prop(k => run(() => p.run(k)))
+  def |(p: => Prop) = Prop(k => { run(k); p.run(k) })
 
 val True = Prop(k => ())
 val False = Prop(k => k())
