@@ -21,3 +21,7 @@ enum Term:
       case _ => that ≡ this
 
 ∃(x => (x ≡ Term.Val("A") | x ≡ Term.Val("B")) & trace{ print(x) }).run
+
+var n = 0
+∃(x => (x ≡ Term.Val("A") | x ≡ Term.Val("B")) & trace{ n += 1 }).run
+n
