@@ -4,66 +4,66 @@
 // The continuation gets called multiple times, and each time the state of the logic variables is different.
 // We always reset the logic variables to the initial state after we are done with calling the continuation.
 
-class E(f: (() => Unit) => Unit):
+class Prop(f: (() => Unit) => Unit):
   def apply(k: () => Unit) = f(k)
-  def &(e: => E) = E(k => f(() => e(k)))
-  def |(e: => E) = E(k => { f(k); e(k) })
+  def &(e: => Prop) = Prop(k => f(() => e(k)))
+  def |(e: => Prop) = Prop(k => { f(k); e(k) })
   def run = f(() => ())
 
-val no = E(k => ()) // unit of (|)
-val yes = E(k => k()) // unit of (&)
+val True = Prop(k => ()) // unit of (|)
+val False = Prop(k => k()) // unit of (&)
 
-// Terms and Logic Variables
+// Terms and Logic Varariables
 
 var n = 0 // unique identifier for logic variables; only for pretty printing
 
-enum Tm:
-  case V(var v: Option[Tm] = None, id: Int = { n += 1; n })
-  case T(a: String, xs: List[Tm] = Nil)
+enum Term:
+  case Var(var v: Option[Term] = None, id: Int = { n += 1; n })
+  case Val(a: String, xs: List[Term] = Nil)
 
-  def ≡(that: Tm): E =
+  def ≡(that: Term): Prop =
     (this, that) match
-      case (T(a, xs), T(b, ys)) =>
-        if a == b && xs.length == ys.length then xs.zip(ys).map(_ ≡ _).fold(yes)(_ & _) else no
-      case (V(Some(x), _), _) => x ≡ that
-      case (x @ V(None, _), _) => E(k => { x.v = Some(that); k(); x.v = None })
+      case (Val(a, xs), Val(b, ys)) =>
+        if a == b && xs.length == ys.length then xs.zip(ys).map(_ ≡ _).fold(True)(_ & _) else False
+      case (Var(Some(x), _), _) => x ≡ that
+      case (x @ Var(None, _), _) => Prop(k => { x.v = Some(that); k(); x.v = None })
       case _ => that ≡ this
 
   override def toString: String =
     this match
-      case V(Some(x), _) => x.toString
-      case V(None, id) => s"?$id"
-      case T(a, List()) => a
-      case T(a, xs) => s"$a(${xs.mkString(", ")})"
+      case Var(Some(x), _) => x.toString
+      case Var(None, id) => s"?$id"
+      case Val(a, List()) => a
+      case Val(a, xs) => s"$a(${xs.mkString(", ")})"
 
-import Tm._
+import Term._
 
 // Existential Quantification
 
-def ∃(f: Tm => E) = f(V())
-def ∃∃(f: (Tm, Tm) => E) = ∃(x => ∃(y => f(x, y)))
-def ∃∃∃(f: (Tm, Tm, Tm) => E) = ∃(x => ∃(y => ∃(z => f(x, y, z))))
-def show(f: Tm => E): E = { val x = V(); E(k => f(x)(() => { println(x); k() })) }
+def ∃(f: Term => Prop) = f(Var())
+def ∃∃(f: (Term, Term) => Prop) = ∃(x => ∃(y => f(x, y)))
+def ∃∃∃(f: (Term, Term, Term) => Prop) = ∃(x => ∃(y => ∃(z => f(x, y, z))))
+def show(f: Term => Prop): Prop = { val x = Var(); Prop(k => f(x)(() => { println(x); k() })) }
 
-// Example Logic Programs
+// Propxample Logic Programs
 
 // We can construct a Prolog tree with the T constructor:
-val tree = T("node", List(T("leaf"), T("node", List(T("leaf"), T("leaf")))))
+val tree = Val("node", List(Val("leaf"), Val("node", List(Val("leaf"), Val("leaf")))))
 
 // Define convenient syntax for lists
-val nil = T("nil")
-def cons(x: Tm, xs: Tm) = T("cons", List(x, xs))
+val nil = Val("nil")
+def cons(x: Term, xs: Term) = Val("cons", List(x, xs))
 
 // Define the member and append predicates on lists
-def member(x: Tm, list: Tm): E =
+def member(x: Term, list: Term): Prop =
   ∃∃((y, ys) => list ≡ cons(y, ys) & (x ≡ y | member(x, ys)))
-def append(xs: Tm, ys: Tm, zs: Tm): E =
+def append(xs: Term, ys: Term, zs: Term): Prop =
   (xs ≡ nil & ys ≡ zs) | ∃∃∃((h, t, r) => xs ≡ cons(h, t) & zs ≡ cons(h, r) & append(t, ys, r))
 
-// Example Queries
-val xs = cons(T("A"), cons(T("B"), nil))
-val ys = cons(T("C"), cons(T("D"), nil))
-val zs = cons(T("A"), cons(T("B"), cons(T("C"), cons(T("D"), nil))))
+// Propxample Queries
+val xs = cons(Val("A"), cons(Val("B"), nil))
+val ys = cons(Val("C"), cons(Val("D"), nil))
+val zs = cons(Val("A"), cons(Val("B"), cons(Val("C"), cons(Val("D"), nil))))
 
 // This calls the continuation with all elements of the list xs
 show(x => member(x, xs)).run
@@ -84,6 +84,6 @@ show(xs2 => ∃(ys2 => append(xs2, ys2, zs))).run
 show(xs2 => ∃(as => ∃(bs => ∃(cs => append(as, cs, zs) & append(xs2, bs, cs))))).run
 
 // Simple cases
-show(x => yes).run
-show(x => no).run
-show(x => yes | yes).run
+show(x => True).run
+show(x => False).run
+show(x => True | True).run
