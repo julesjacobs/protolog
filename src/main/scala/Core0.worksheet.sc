@@ -1,9 +1,9 @@
 class Prop(val run: (=> Unit) => Unit):
-  def &(p: => Prop) = Prop(k => run(p.run(k)))
+  def &(p: => Prop) = Prop(k => run { p.run(k) })
   def |(p: => Prop) = Prop(k => { run(k); p.run(k) })
 
-val True = Prop(k => ())
-val False = Prop(k => k)
+val False = Prop(k => ())
+val True = Prop(k => k)
 def ∃(f: Term => Prop) = f(Term.Var())
 def trace(f: => Unit) = Prop(k => { f; k })
 
@@ -19,8 +19,8 @@ enum Term:
       case (x @ Var(None), _) => Prop(k => { x.v = Some(that); k; x.v = None })
       case _ => that ≡ this
 
-∃(x => (x ≡ Term.Val("A") | x ≡ Term.Val("B")) & trace { print(x) }).run{}
+∃(x => (x ≡ Term.Val("A") | x ≡ Term.Val("B")) & trace { print(x) }).run {}
 
 var n = 0
-∃(x => (x ≡ Term.Val("A") | x ≡ Term.Val("B")) & trace { n += 1 }).run{}
+∃(x => (x ≡ Term.Val("A") | x ≡ Term.Val("B")) & trace { n += 1 }).run {}
 n

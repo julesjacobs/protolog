@@ -10,8 +10,8 @@ class Prop(f: (() => Unit) => Unit):
   def |(e: => Prop) = Prop(k => { f(k); e(k) })
   def run = f(() => ())
 
-val True = Prop(k => ()) // unit of (|)
-val False = Prop(k => k()) // unit of (&)
+val False = Prop(k => ()) // unit of (|)
+val True = Prop(k => k()) // unit of (&)
 
 // Terms and Logic Varariables
 
